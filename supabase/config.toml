@@ -1,0 +1,9 @@
+# Configuración del proyecto Supabase (CLI).
+project_id = "ministerio-nuestro-hogar"
+
+[functions.admin-users]
+# Requiere JWT válido: la función verifica además que el rol sea admin.
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = true
