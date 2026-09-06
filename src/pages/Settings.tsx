@@ -28,9 +28,6 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const ONESIGNAL_APP_ID = 'e74c71ae-1d2d-46f8-9c89-e510ae4d8aef';
-const ONESIGNAL_SDK_URL = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-
 export function Settings() {
   const toast = useToast();
   const settings = useAsync(() => getSettings(), []);
@@ -42,31 +39,23 @@ export function Settings() {
     let pushSubscription: OneSignal['User']['PushSubscription'] | undefined;
     let refreshNotificationState: (() => void) | undefined;
 
-    const initializeOneSignal = async () => {
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      window.OneSignalDeferred.push(async (OneSignal) => {
-        await OneSignal.init({ appId: ONESIGNAL_APP_ID });
-        pushSubscription = OneSignal.User.PushSubscription;
-        refreshNotificationState = () => {
-          if (!cancelled) {
-            setNotificationsEnabled(
-              OneSignal.Notifications.permission && OneSignal.User.PushSubscription.optedIn,
-            );
-          }
-        };
-        pushSubscription.addEventListener('change', refreshNotificationState);
-        refreshNotificationState();
-      });
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push((OneSignal) => {
+      if (cancelled) return;
 
-      if (!document.querySelector(`script[src="${ONESIGNAL_SDK_URL}"]`)) {
-        const script = document.createElement('script');
-        script.src = ONESIGNAL_SDK_URL;
-        script.async = true;
-        document.head.appendChild(script);
-      }
-    };
+      pushSubscription = OneSignal.User.PushSubscription;
+      refreshNotificationState = () => {
+        const permission = OneSignal.Notifications.permission;
+        const optedIn = OneSignal.User.PushSubscription.optedIn;
+        if (!cancelled) {
+          setNotificationsEnabled(permission === true && optedIn === true);
+        }
+      };
 
-    void initializeOneSignal();
+      pushSubscription.addEventListener('change', refreshNotificationState);
+      refreshNotificationState();
+    });
+
     return () => {
       cancelled = true;
       if (pushSubscription && refreshNotificationState) {
@@ -82,9 +71,10 @@ export function Settings() {
       try {
         await OneSignal.Notifications.requestPermission();
         await OneSignal.User.PushSubscription.optIn();
-        setNotificationsEnabled(
-          OneSignal.Notifications.permission && OneSignal.User.PushSubscription.optedIn,
-        );
+
+        const permission = OneSignal.Notifications.permission;
+        const optedIn = OneSignal.User.PushSubscription.optedIn;
+        setNotificationsEnabled(permission === true && optedIn === true);
       } finally {
         setNotificationsLoading(false);
       }
