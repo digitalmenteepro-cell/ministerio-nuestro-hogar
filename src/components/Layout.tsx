@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GlobalSearch } from '@/components/GlobalSearch';
-import { OneSignalNotifications } from '@/components/OneSignalNotifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn, fullName, initials } from '@/lib/utils';
 
@@ -66,8 +65,6 @@ export function Layout() {
           <p className="truncate text-xs text-muted-foreground">Ministerio de Alabanza</p>
         </div>
       </div>
-
-      <OneSignalNotifications />
 
       <Button
         variant="secondary"
