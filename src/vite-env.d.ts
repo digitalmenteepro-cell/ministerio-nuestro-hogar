@@ -10,3 +10,17 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+type OneSignalDeferredCallback = (oneSignal: OneSignal) => void | Promise<void>;
+
+interface OneSignal {
+  init(options: { appId: string }): Promise<void>;
+  Notifications: {
+    permission: boolean;
+    requestPermission(): Promise<void>;
+  };
+}
+
+interface Window {
+  OneSignalDeferred?: OneSignalDeferredCallback[];
+}
+

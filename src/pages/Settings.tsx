@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -28,9 +28,46 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+const ONESIGNAL_APP_ID = 'e74c71ae-1d2d-46f8-9c89-e510ae4d8aef';
+const ONESIGNAL_SDK_URL = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+
 export function Settings() {
   const toast = useToast();
   const settings = useAsync(() => getSettings(), []);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const initializeOneSignal = async () => {
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      window.OneSignalDeferred.push(async (OneSignal) => {
+        await OneSignal.init({ appId: ONESIGNAL_APP_ID });
+        if (!cancelled) setNotificationsEnabled(OneSignal.Notifications.permission);
+      });
+
+      if (!document.querySelector(`script[src="${ONESIGNAL_SDK_URL}"]`)) {
+        const script = document.createElement('script');
+        script.src = ONESIGNAL_SDK_URL;
+        script.async = true;
+        document.head.appendChild(script);
+      }
+    };
+
+    void initializeOneSignal();
+    return () => { cancelled = true; };
+  }, []);
+
+  const activateNotifications = () => {
+    setNotificationsLoading(true);
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async (OneSignal) => {
+      await OneSignal.Notifications.requestPermission();
+      setNotificationsEnabled(OneSignal.Notifications.permission);
+      setNotificationsLoading(false);
+    });
+  };
 
   const {
     register, handleSubmit, reset,
@@ -142,6 +179,24 @@ export function Settings() {
               <Label htmlFor="s_yt">YouTube</Label>
               <Input id="s_yt" {...register('youtube')} />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Notificaciones</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Recibe avisos de ensayos, anuncios, nuevas canciones y cambios importantes.
+            </p>
+            {notificationsEnabled ? (
+              <span className="text-sm font-medium text-primary">Notificaciones activadas</span>
+            ) : (
+              <Button type="button" onClick={activateNotifications} loading={notificationsLoading}>
+                Activar notificaciones
+              </Button>
+            )}
           </CardContent>
         </Card>
 

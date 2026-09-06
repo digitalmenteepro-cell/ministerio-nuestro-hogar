@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'dev-dist', 'supabase/functions/**'] },
+  { ignores: ['dist', 'node_modules', 'dev-dist', 'supabase/functions/**', 'public/push/onesignal/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
