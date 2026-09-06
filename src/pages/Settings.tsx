@@ -33,6 +33,7 @@ export function Settings() {
   const settings = useAsync(() => getSettings(), []);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,19 +67,45 @@ export function Settings() {
 
   const activateNotifications = () => {
     setNotificationsLoading(true);
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async (OneSignal) => {
-      try {
-        await OneSignal.Notifications.requestPermission();
-        await OneSignal.User.PushSubscription.optIn();
+    setNotificationsError(null);
+    const deferred = window.OneSignalDeferred || (window.OneSignalDeferred = []);
 
-        const permission = OneSignal.Notifications.permission;
-        const optedIn = OneSignal.User.PushSubscription.optedIn;
-        setNotificationsEnabled(permission === true && optedIn === true);
-      } finally {
-        setNotificationsLoading(false);
-      }
+    const timeout = new Promise<never>((_, reject) => {
+      window.setTimeout(() => reject(new Error('OneSignal no respondió a tiempo.')), 8000);
     });
+
+    const activation = new Promise<void>((resolve, reject) => {
+      deferred.push(async (OneSignal) => {
+        try {
+          if (OneSignal.Notifications.permission === false) {
+            await OneSignal.Notifications.requestPermission();
+          }
+
+          if (
+            OneSignal.Notifications.permission === true &&
+            OneSignal.User.PushSubscription.optedIn === false
+          ) {
+            await OneSignal.User.PushSubscription.optIn();
+          }
+
+          const permission = OneSignal.Notifications.permission;
+          const optedIn = OneSignal.User.PushSubscription.optedIn;
+          setNotificationsEnabled(permission === true && optedIn === true);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+
+    Promise.race([activation, timeout])
+      .catch(() => {
+        setNotificationsEnabled(false);
+        setNotificationsError('No se pudieron activar las notificaciones. Inténtalo nuevamente.');
+      })
+      .finally(() => {
+        setNotificationsLoading(false);
+      });
   };
 
   const {
@@ -202,13 +229,16 @@ export function Settings() {
             <p className="text-sm text-muted-foreground">
               Recibe avisos de ensayos, anuncios, nuevas canciones y cambios importantes.
             </p>
-            {notificationsEnabled ? (
-              <span className="text-sm font-medium text-primary">Notificaciones activadas</span>
-            ) : (
-              <Button type="button" onClick={activateNotifications} loading={notificationsLoading}>
-                Activar notificaciones
-              </Button>
-            )}
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              {notificationsEnabled ? (
+                <span className="text-sm font-medium text-primary">Notificaciones activadas</span>
+              ) : (
+                <Button type="button" onClick={activateNotifications} loading={notificationsLoading}>
+                  Activar notificaciones
+                </Button>
+              )}
+              {notificationsError && <p className="text-xs text-red-400">{notificationsError}</p>}
+            </div>
           </CardContent>
         </Card>
 
