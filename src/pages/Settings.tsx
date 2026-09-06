@@ -39,12 +39,23 @@ export function Settings() {
 
   useEffect(() => {
     let cancelled = false;
+    let pushSubscription: OneSignal['User']['PushSubscription'] | undefined;
+    let refreshNotificationState: (() => void) | undefined;
 
     const initializeOneSignal = async () => {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       window.OneSignalDeferred.push(async (OneSignal) => {
         await OneSignal.init({ appId: ONESIGNAL_APP_ID });
-        if (!cancelled) setNotificationsEnabled(OneSignal.Notifications.permission);
+        pushSubscription = OneSignal.User.PushSubscription;
+        refreshNotificationState = () => {
+          if (!cancelled) {
+            setNotificationsEnabled(
+              OneSignal.Notifications.permission && OneSignal.User.PushSubscription.optedIn,
+            );
+          }
+        };
+        pushSubscription.addEventListener('change', refreshNotificationState);
+        refreshNotificationState();
       });
 
       if (!document.querySelector(`script[src="${ONESIGNAL_SDK_URL}"]`)) {
@@ -56,16 +67,27 @@ export function Settings() {
     };
 
     void initializeOneSignal();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (pushSubscription && refreshNotificationState) {
+        pushSubscription.removeEventListener('change', refreshNotificationState);
+      }
+    };
   }, []);
 
   const activateNotifications = () => {
     setNotificationsLoading(true);
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (OneSignal) => {
-      await OneSignal.Notifications.requestPermission();
-      setNotificationsEnabled(OneSignal.Notifications.permission);
-      setNotificationsLoading(false);
+      try {
+        await OneSignal.Notifications.requestPermission();
+        await OneSignal.User.PushSubscription.optIn();
+        setNotificationsEnabled(
+          OneSignal.Notifications.permission && OneSignal.User.PushSubscription.optedIn,
+        );
+      } finally {
+        setNotificationsLoading(false);
+      }
     });
   };
 

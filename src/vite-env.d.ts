@@ -18,6 +18,20 @@ interface OneSignal {
     permission: boolean;
     requestPermission(): Promise<void>;
   };
+  User: {
+    PushSubscription: {
+      optedIn: boolean;
+      optIn(): Promise<void>;
+      addEventListener(
+        event: 'change',
+        listener: () => void,
+      ): void;
+      removeEventListener(
+        event: 'change',
+        listener: () => void,
+      ): void;
+    };
+  };
 }
 
 interface Window {
