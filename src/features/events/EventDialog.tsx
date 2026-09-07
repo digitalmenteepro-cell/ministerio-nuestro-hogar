@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/useToast';
 import { listProfiles } from '@/services/profiles.service';
 import { createEvent, updateEvent, type EventInput } from '@/services/events.service';
 import { errorMessage, fullName } from '@/lib/utils';
+import { sendPushNotification } from '@/lib/notifications';
 import type { EventType, MinistryEvent } from '@/types';
 
 const NONE = '__none__';
@@ -118,9 +119,27 @@ export function EventDialog({ open, onOpenChange, event, defaultDate, onSaved }:
       if (event) {
         await updateEvent(event.id, payload);
         toast.success('Evento actualizado');
+        try {
+          await sendPushNotification({
+            title: 'Cambio de ensayo',
+            message: 'Se modificaron los datos de un ensayo. Revisa la nueva información.',
+            url: 'https://ministerio-nuestro-hogar.vercel.app/calendario',
+          });
+        } catch {
+          toast.error('Evento guardado', 'No se pudo enviar la notificación push.');
+        }
       } else {
         await createEvent(payload, profile.id);
         toast.success('Evento creado');
+        try {
+          await sendPushNotification({
+            title: 'Nuevo ensayo',
+            message: payload.title || new Date(payload.starts_at).toLocaleString('es-ES'),
+            url: 'https://ministerio-nuestro-hogar.vercel.app/calendario',
+          });
+        } catch {
+          toast.error('Evento guardado', 'No se pudo enviar la notificación push.');
+        }
       }
       onOpenChange(false);
       onSaved();
