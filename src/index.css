@@ -38,8 +38,15 @@
     background-attachment: fixed;
   }
 
-  /* Safe areas for iOS PWA bottom nav */
+  /* Safe areas for iOS PWA chrome and bottom navigation */
+  .pt-safe { padding-top: env(safe-area-inset-top); }
   .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pb-nav-safe { padding-bottom: calc(7rem + env(safe-area-inset-bottom)); }
+  .min-h-safe-screen { min-height: 100dvh; min-height: 100svh; }
+
+  @supports (height: 100dvh) {
+    .min-h-safe-screen { min-height: 100dvh; }
+  }
 }
 
 @layer utilities {
