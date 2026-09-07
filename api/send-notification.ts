@@ -54,7 +54,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role,active')
+    .select('id,role,active')
     .eq('id', authData.user.id)
     .maybeSingle();
 
