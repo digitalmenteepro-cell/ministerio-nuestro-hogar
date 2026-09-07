@@ -13,6 +13,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { useToast } from '@/hooks/useToast';
 import { getSettings, updateSettings } from '@/services/settings.service';
 import { errorMessage } from '@/lib/utils';
+import { initializeOneSignal, OneSignal } from '@/lib/onesignal';
 
 const schema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
@@ -37,75 +38,61 @@ export function Settings() {
 
   useEffect(() => {
     let cancelled = false;
-    let pushSubscription: OneSignal['User']['PushSubscription'] | undefined;
-    let refreshNotificationState: (() => void) | undefined;
-
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push((OneSignal) => {
+    const pushSubscription = OneSignal.User.PushSubscription;
+    const refreshNotificationState = () => {
       if (cancelled) return;
+      setNotificationsEnabled(
+        OneSignal.Notifications.permission === true && pushSubscription.optedIn === true,
+      );
+    };
 
-      pushSubscription = OneSignal.User.PushSubscription;
-      refreshNotificationState = () => {
-        const permission = OneSignal.Notifications.permission;
-        const optedIn = OneSignal.User.PushSubscription.optedIn;
-        if (!cancelled) {
-          setNotificationsEnabled(permission === true && optedIn === true);
-        }
-      };
-
-      pushSubscription.addEventListener('change', refreshNotificationState);
-      refreshNotificationState();
-    });
+    void initializeOneSignal()
+      .then(() => {
+        if (cancelled) return;
+        pushSubscription.addEventListener('change', refreshNotificationState);
+        refreshNotificationState();
+      })
+      .catch(() => {
+        if (!cancelled) setNotificationsError('No se pudieron cargar las notificaciones.');
+      });
 
     return () => {
       cancelled = true;
-      if (pushSubscription && refreshNotificationState) {
-        pushSubscription.removeEventListener('change', refreshNotificationState);
-      }
+      pushSubscription.removeEventListener('change', refreshNotificationState);
     };
   }, []);
 
-  const activateNotifications = () => {
+  const activateNotifications = async () => {
     setNotificationsLoading(true);
     setNotificationsError(null);
-    const deferred = window.OneSignalDeferred || (window.OneSignalDeferred = []);
 
-    const timeout = new Promise<never>((_, reject) => {
-      window.setTimeout(() => reject(new Error('OneSignal no respondió a tiempo.')), 8000);
-    });
-
-    const activation = new Promise<void>((resolve, reject) => {
-      deferred.push(async (OneSignal) => {
-        try {
+    try {
+      await Promise.race([
+        initializeOneSignal().then(async () => {
           if (OneSignal.Notifications.permission === false) {
             await OneSignal.Notifications.requestPermission();
           }
-
           if (
             OneSignal.Notifications.permission === true &&
             OneSignal.User.PushSubscription.optedIn === false
           ) {
             await OneSignal.User.PushSubscription.optIn();
           }
-
-          const permission = OneSignal.Notifications.permission;
-          const optedIn = OneSignal.User.PushSubscription.optedIn;
-          setNotificationsEnabled(permission === true && optedIn === true);
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      });
-    });
-
-    Promise.race([activation, timeout])
-      .catch(() => {
-        setNotificationsEnabled(false);
-        setNotificationsError('No se pudieron activar las notificaciones. Inténtalo nuevamente.');
-      })
-      .finally(() => {
-        setNotificationsLoading(false);
-      });
+          setNotificationsEnabled(
+            OneSignal.Notifications.permission === true &&
+              OneSignal.User.PushSubscription.optedIn === true,
+          );
+        }),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error('timeout')), 8000);
+        }),
+      ]);
+    } catch {
+      setNotificationsEnabled(false);
+      setNotificationsError('No se pudieron activar las notificaciones. Inténtalo nuevamente.');
+    } finally {
+      setNotificationsLoading(false);
+    }
   };
 
   const {

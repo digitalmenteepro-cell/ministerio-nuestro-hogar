@@ -10,31 +10,3 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-type OneSignalDeferredCallback = (oneSignal: OneSignal) => void | Promise<void>;
-
-interface OneSignal {
-  init(options: { appId: string }): Promise<void>;
-  Notifications: {
-    permission: boolean;
-    requestPermission(): Promise<void>;
-  };
-  User: {
-    PushSubscription: {
-      optedIn: boolean;
-      optIn(): Promise<void>;
-      addEventListener(
-        event: 'change',
-        listener: () => void,
-      ): void;
-      removeEventListener(
-        event: 'change',
-        listener: () => void,
-      ): void;
-    };
-  };
-}
-
-interface Window {
-  OneSignalDeferred?: OneSignalDeferredCallback[];
-}
-
