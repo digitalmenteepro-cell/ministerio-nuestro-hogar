@@ -40,7 +40,15 @@ export default async function handler(request: VercelRequest, response: VercelRe
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
   const token = getBearerToken(request);
 
-  if (!appApiKey || !appId || !supabaseUrl || !supabaseAnonKey || !token) {
+  if (!appApiKey || !appId) {
+    return response.status(500).json({ error: 'La configuración de OneSignal está incompleta.' });
+  }
+
+  if (appId !== 'e74c71ae-1d2d-46f8-9c89-e510ae4d8aef') {
+    return response.status(500).json({ error: 'El App ID de OneSignal no coincide con la aplicación configurada.' });
+  }
+
+  if (!supabaseUrl || !supabaseAnonKey || !token) {
     return response.status(401).json({ error: 'No autorizado.' });
   }
 
@@ -108,11 +116,47 @@ export default async function handler(request: VercelRequest, response: VercelRe
       }),
     });
 
-    if (!oneSignalResponse.ok) {
-      return response.status(502).json({ error: 'No se pudo enviar la notificación.' });
+    const responseText = await oneSignalResponse.text();
+    let parsedResponse: {
+      id?: string;
+      recipients?: number | null;
+      errors?: unknown;
+      [key: string]: unknown;
+    } | null = null;
+
+    try {
+      parsedResponse = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      parsedResponse = null;
     }
 
-    return response.status(200).json({ sent: true });
+    console.log('[onesignal response]', {
+      status: oneSignalResponse.status,
+      ok: oneSignalResponse.ok,
+      hasId: Boolean(parsedResponse?.id),
+      id: parsedResponse?.id ?? null,
+      recipients: parsedResponse?.recipients ?? null,
+      errors: parsedResponse?.errors ?? null,
+    });
+
+    if (!oneSignalResponse.ok) {
+      const providerMessage =
+        typeof parsedResponse?.errors === 'string'
+          ? parsedResponse.errors
+          : 'OneSignal rechazó la solicitud.';
+      return response.status(502).json({
+        error: 'No se pudo crear la notificación en OneSignal.',
+        details: providerMessage,
+      });
+    }
+
+    if (!parsedResponse?.id) {
+      return response.status(502).json({
+        error: 'OneSignal respondió correctamente, pero no creó ningún mensaje.',
+      });
+    }
+
+    return response.status(200).json({ success: true, id: parsedResponse.id });
   } catch {
     return response.status(502).json({ error: 'No se pudo enviar la notificación.' });
   }
