@@ -9,10 +9,32 @@ export function initializeOneSignal(): Promise<void> {
 
   initialization ??= OneSignal.init({
     appId: ONESIGNAL_APP_ID,
-    serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',
-    serviceWorkerParam: { scope: '/push/onesignal/' },
+    serviceWorkerPath: 'push/onesignal/OneSignalSDKWorker.js',
+    serviceWorkerParam: {
+      scope: '/push/onesignal/',
+    },
     autoRegister: false,
-    autoResubscribe: false,
+    autoResubscribe: true,
+    notifyButton: {
+      enable: false,
+      prenotify: false,
+      showCredit: false,
+      text: {
+        'dialog.blocked.message': '',
+        'dialog.blocked.title': '',
+        'dialog.main.button.subscribe': '',
+        'dialog.main.button.unsubscribe': '',
+        'dialog.main.title': '',
+        'message.action.resubscribed': '',
+        'message.action.subscribed': '',
+        'message.action.subscribing': '',
+        'message.action.unsubscribed': '',
+        'message.prenotify': '',
+        'tip.state.blocked': '',
+        'tip.state.subscribed': '',
+        'tip.state.unsubscribed': '',
+      },
+    },
   });
 
   return initialization;
