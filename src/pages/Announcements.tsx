@@ -23,6 +23,7 @@ import {
   sendNotification, updateAnnouncement,
 } from '@/services/announcements.service';
 import { errorMessage } from '@/lib/utils';
+import { sendPushNotification } from '@/lib/notifications';
 import type { Announcement, NotificationChannel } from '@/types';
 
 const CHANNELS: Array<{ id: NotificationChannel; label: string }> = [
@@ -75,9 +76,31 @@ export function Announcements() {
       if (editing) {
         await updateAnnouncement(editing.id, { title: title.trim(), body: body.trim(), published });
         toast.success('Anuncio actualizado');
+        if (published && !editing.published) {
+          try {
+            await sendPushNotification({
+              title: 'Nuevo anuncio',
+              message: title.trim() || 'Se ha publicado un nuevo anuncio en Nuestro Hogar.',
+              url: 'https://ministerio-nuestro-hogar.vercel.app/anuncios',
+            });
+          } catch {
+            toast.error('Anuncio guardado', 'No se pudo enviar la notificación push.');
+          }
+        }
       } else {
         await createAnnouncement({ title: title.trim(), body: body.trim(), published }, profile.id);
         toast.success('Anuncio creado');
+        if (published) {
+          try {
+            await sendPushNotification({
+              title: 'Nuevo anuncio',
+              message: title.trim() || 'Se ha publicado un nuevo anuncio en Nuestro Hogar.',
+              url: 'https://ministerio-nuestro-hogar.vercel.app/anuncios',
+            });
+          } catch {
+            toast.error('Anuncio guardado', 'No se pudo enviar la notificación push.');
+          }
+        }
       }
       setOpen(false);
       announcements.reload();

@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { createSong, deleteSong, listSongs, updateSong, type SongInput } from '@/services/songs.service';
 import { errorMessage, formatDuration, parseDuration } from '@/lib/utils';
+import { sendPushNotification } from '@/lib/notifications';
 import type { Song } from '@/types';
 
 const optionalUrl = z
@@ -136,8 +137,18 @@ export function Songs() {
         await updateSong(editing.id, toPayload(values));
         toast.success('Canción actualizada');
       } else {
-        await createSong(toPayload(values), profile.id);
+        const payload = toPayload(values);
+        await createSong(payload, profile.id);
         toast.success('Canción agregada');
+        try {
+          await sendPushNotification({
+            title: 'Nueva canción',
+            message: `Se agregó «${payload.title}» al repertorio.`,
+            url: 'https://ministerio-nuestro-hogar.vercel.app/repertorio',
+          });
+        } catch {
+          toast.error('Canción guardada', 'No se pudo enviar la notificación push.');
+        }
       }
       setDialogOpen(false);
       songs.reload();
