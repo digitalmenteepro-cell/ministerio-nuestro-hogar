@@ -148,7 +148,7 @@ export function Layout() {
         </div>
       )}
 
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-zinc-950/90 px-4 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-border bg-zinc-950/90 px-4 pt-safe backdrop-blur md:hidden">
         <button type="button" aria-label="Abrir menú" onClick={() => setMenuOpen(true)}>
           <Menu className="h-6 w-6" />
         </button>
@@ -158,7 +158,7 @@ export function Layout() {
         </button>
       </header>
 
-      <main className="p-4 pb-28 md:ml-64 md:p-8 md:pb-8">
+      <main className="p-4 pb-nav-safe md:ml-64 md:p-8 md:pb-8">
         <Outlet />
       </main>
 
