@@ -58,7 +58,18 @@ export default async function handler(request: VercelRequest, response: VercelRe
     .eq('id', authData.user.id)
     .maybeSingle();
 
-  if (profileError || !profile?.active || profile.role !== 'admin') {
+  const isAdmin = profile?.role === 'admin' && profile.active === true;
+  console.log('[push auth]', {
+    authenticated: true,
+    userId: authData.user.id,
+    profileFound: Boolean(profile),
+    profileQueryFailed: Boolean(profileError),
+    resolvedRole: profile?.role ?? null,
+    active: profile?.active ?? null,
+    isAdmin,
+  });
+
+  if (profileError || !isAdmin) {
     return response.status(403).json({ error: 'No tienes permiso para realizar esta acción.' });
   }
 
