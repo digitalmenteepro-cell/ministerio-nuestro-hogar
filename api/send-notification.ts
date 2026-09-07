@@ -52,9 +52,17 @@ export default async function handler(request: VercelRequest, response: VercelRe
     return response.status(401).json({ error: 'No autorizado.' });
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
+  const { data: profile, error: profileError } = await userSupabase
     .from('profiles')
-    .select('id,role,active')
+    .select('id, role, active')
     .eq('id', authData.user.id)
     .maybeSingle();
 
