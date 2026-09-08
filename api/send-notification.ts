@@ -109,7 +109,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
       body: JSON.stringify({
         app_id: appId,
         target_channel: 'push',
-        included_segments: ['Subscribed Users'],
+        included_segments: ['Total Subscriptions'],
         headings: { en: payload.title.trim(), es: payload.title.trim() },
         contents: { en: payload.message.trim(), es: payload.message.trim() },
         url: payload.url,
