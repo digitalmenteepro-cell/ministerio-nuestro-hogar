@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Check, Clock, MapPin, Music2, Plus, User, X } from 'lucide-react';
+import { Check, Clock, MapPin, Music2, Plus, User, X, Youtube } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -168,6 +168,31 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
                     {item.song?.song_key ? ` · Tono ${item.song.song_key}` : ''}
                     {item.song?.duration_seconds != null ? ` · ${formatDuration(item.song.duration_seconds)}` : ''}
                   </p>
+                  {(() => {
+                    if (!item.song?.youtube_url) return null;
+                    try {
+                      const url = new URL(item.song.youtube_url);
+                      const isYouTube =
+                        url.protocol === 'https:' &&
+                        (url.hostname === 'youtube.com' ||
+                          url.hostname.endsWith('.youtube.com') ||
+                          url.hostname === 'youtu.be');
+                      if (!isYouTube) return null;
+                    } catch {
+                      return null;
+                    }
+                    return (
+                      <a
+                        href={item.song.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-red-400 transition-colors hover:text-red-300"
+                      >
+                        <Youtube className="h-3.5 w-3.5" aria-hidden />
+                        YouTube
+                      </a>
+                    );
+                  })()}
                 </div>
                 {isAdmin && (
                   <Button
