@@ -23,6 +23,25 @@ const allowedUrls = new Set([
   'https://ministerio-nuestro-hogar.vercel.app/repertorio',
 ]);
 
+const eventUrlPattern = /^\/calendario\?event=[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isAllowedUrl(value: string): boolean {
+  if (allowedUrls.has(value) || eventUrlPattern.test(value)) return true;
+
+  try {
+    const url = new URL(value);
+    return (
+      url.origin === 'https://ministerio-nuestro-hogar.vercel.app' &&
+      url.pathname === '/calendario' &&
+      url.searchParams.size === 1 &&
+      url.searchParams.has('event') &&
+      eventUrlPattern.test(`${url.pathname}${url.search}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
 function getBearerToken(request: VercelRequest): string | null {
   const header = request.headers.authorization;
   const value = Array.isArray(header) ? header[0] : header;
@@ -94,7 +113,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     !payload?.title?.trim() ||
     !payload.message?.trim() ||
     !payload.url ||
-    !allowedUrls.has(payload.url)
+    !isAllowedUrl(payload.url)
   ) {
     return response.status(400).json({ error: 'Datos de notificación inválidos.' });
   }
