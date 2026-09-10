@@ -23,10 +23,12 @@ const allowedUrls = new Set([
   'https://ministerio-nuestro-hogar.vercel.app/repertorio',
 ]);
 
-const eventUrlPattern = /^\/calendario\?event=[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidPattern = '[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
+const eventUrlPattern = new RegExp(`^\\/calendario\\?event=${uuidPattern}$`, 'i');
+const announcementUrlPattern = new RegExp(`^\\/anuncios\\?announcement=${uuidPattern}$`, 'i');
 
 function isAllowedUrl(value: string): boolean {
-  if (allowedUrls.has(value) || eventUrlPattern.test(value)) return true;
+  if (allowedUrls.has(value) || eventUrlPattern.test(value) || announcementUrlPattern.test(value)) return true;
 
   try {
     const url = new URL(value);
@@ -36,6 +38,12 @@ function isAllowedUrl(value: string): boolean {
       url.searchParams.size === 1 &&
       url.searchParams.has('event') &&
       eventUrlPattern.test(`${url.pathname}${url.search}`)
+    ) || (
+      url.origin === 'https://ministerio-nuestro-hogar.vercel.app' &&
+      url.pathname === '/anuncios' &&
+      url.searchParams.size === 1 &&
+      url.searchParams.has('announcement') &&
+      announcementUrlPattern.test(`${url.pathname}${url.search}`)
     );
   } catch {
     return false;

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Megaphone, Pencil, Plus, Send, Trash2 } from 'lucide-react';
@@ -34,6 +35,7 @@ const CHANNELS: Array<{ id: NotificationChannel; label: string }> = [
 
 export function Announcements() {
   const { profile, isAdmin } = useAuth();
+  const [params, setParams] = useSearchParams();
   const toast = useToast();
   const announcements = useAsync(() => listAnnouncements(!isAdmin), [isAdmin]);
   const logs = useAsync(() => (isAdmin ? listNotificationLogs(20) : Promise.resolve([])), [isAdmin]);
@@ -48,6 +50,27 @@ export function Announcements() {
   const [sendFor, setSendFor] = useState<Announcement | null>(null);
   const [channels, setChannels] = useState<NotificationChannel[]>(['push']);
   const [sending, setSending] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+
+  useEffect(() => {
+    const announcementId = params.get('announcement');
+    if (!announcementId || announcements.loading || !announcements.data) return;
+    const announcement = announcements.data.find((item) => item.id === announcementId);
+    if (announcement) setSelectedAnnouncement(announcement);
+  }, [announcements.data, announcements.loading, params]);
+
+  const closeAnnouncement = () => {
+    setSelectedAnnouncement(null);
+    if (params.has('announcement')) {
+      const nextParams = new URLSearchParams(params);
+      nextParams.delete('announcement');
+      setParams(nextParams, { replace: true });
+    }
+  };
+
+  const openAnnouncement = (announcement: Announcement) => {
+    setSelectedAnnouncement(announcement);
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -81,21 +104,24 @@ export function Announcements() {
             await sendPushNotification({
               title: 'Nuevo anuncio',
               message: title.trim() || 'Se ha publicado un nuevo anuncio en Nuestro Hogar.',
-              url: 'https://ministerio-nuestro-hogar.vercel.app/anuncios',
+              url: `https://ministerio-nuestro-hogar.vercel.app/anuncios?announcement=${editing.id}`,
             });
           } catch {
             toast.error('Anuncio guardado', 'No se pudo enviar la notificación push.');
           }
         }
       } else {
-        await createAnnouncement({ title: title.trim(), body: body.trim(), published }, profile.id);
+        const createdAnnouncement = await createAnnouncement(
+          { title: title.trim(), body: body.trim(), published },
+          profile.id,
+        );
         toast.success('Anuncio creado');
         if (published) {
           try {
             await sendPushNotification({
               title: 'Nuevo anuncio',
               message: title.trim() || 'Se ha publicado un nuevo anuncio en Nuestro Hogar.',
-              url: 'https://ministerio-nuestro-hogar.vercel.app/anuncios',
+              url: `https://ministerio-nuestro-hogar.vercel.app/anuncios?announcement=${createdAnnouncement.id}`,
             });
           } catch {
             toast.error('Anuncio guardado', 'No se pudo enviar la notificación push.');
@@ -169,7 +195,19 @@ export function Announcements() {
 
       <div className="space-y-2">
         {(announcements.data ?? []).map((a) => (
-          <Card key={a.id}>
+          <Card
+            key={a.id}
+            className="cursor-pointer transition-colors hover:border-brand-400/60"
+            role="button"
+            tabIndex={0}
+            onClick={() => openAnnouncement(a)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openAnnouncement(a);
+              }
+            }}
+          >
             <CardContent className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
@@ -185,13 +223,13 @@ export function Announcements() {
 
                 {isAdmin && (
                   <div className="flex shrink-0 gap-1">
-                    <Button variant="ghost" size="icon" aria-label="Enviar" onClick={() => setSendFor(a)}>
+                    <Button variant="ghost" size="icon" aria-label="Enviar" onClick={(event) => { event.stopPropagation(); setSendFor(a); }}>
                       <Send className="h-4 w-4 text-brand-300" />
                     </Button>
-                    <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => openEdit(a)}>
+                    <Button variant="ghost" size="icon" aria-label="Editar" onClick={(event) => { event.stopPropagation(); openEdit(a); }}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" aria-label="Eliminar" onClick={() => setToDelete(a)}>
+                    <Button variant="ghost" size="icon" aria-label="Eliminar" onClick={(event) => { event.stopPropagation(); setToDelete(a); }}>
                       <Trash2 className="h-4 w-4 text-red-400" />
                     </Button>
                   </div>
@@ -231,6 +269,23 @@ export function Announcements() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={!!selectedAnnouncement} onOpenChange={(value) => !value && closeAnnouncement()}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto border-brand-400/40 bg-background sm:max-w-2xl">
+          <DialogHeader className="gap-4">
+            <Badge className="w-fit bg-brand-500/15 text-brand-200 hover:bg-brand-500/15">ANUNCIO</Badge>
+            <DialogTitle className="text-2xl leading-tight sm:text-3xl">
+              {selectedAnnouncement?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedAnnouncement && format(new Date(selectedAnnouncement.created_at), "d 'de' MMMM yyyy, HH:mm", { locale: es })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="whitespace-pre-wrap rounded-xl border border-brand-400/20 bg-brand-950/20 p-5 text-base leading-7 text-foreground">
+            {selectedAnnouncement?.body}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Create / edit */}
       <Dialog open={open} onOpenChange={setOpen}>
