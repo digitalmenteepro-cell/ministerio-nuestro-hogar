@@ -5,7 +5,7 @@ import {
   format, isSameDay, isSameMonth, isToday, startOfDay, startOfMonth, startOfWeek,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Bell, CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
@@ -21,6 +21,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { deleteEvent, listEvents } from '@/services/events.service';
+import { sendPushNotification } from '@/lib/notifications';
 import { cn, errorMessage } from '@/lib/utils';
 import { EVENT_TYPE_LABEL, type MinistryEvent } from '@/types';
 
@@ -42,6 +43,8 @@ export function CalendarPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<MinistryEvent | null>(null);
   const [toDelete, setToDelete] = useState<MinistryEvent | null>(null);
+  const [toRemind, setToRemind] = useState<MinistryEvent | null>(null);
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
 
   // Query window covers the visible range for the current view.
   const { from, to } = useMemo(() => {
@@ -101,6 +104,12 @@ export function CalendarPage() {
       : view === 'week'
         ? `${format(from, 'd MMM', { locale: es })} – ${format(to, 'd MMM yyyy', { locale: es })}`
         : format(cursor, 'MMMM yyyy', { locale: es });
+
+  const reminderMessage = toRemind
+    ? isToday(new Date(toRemind.starts_at))
+      ? `🔔 Recuerda: tienes ensayo hoy a ${format(new Date(toRemind.starts_at), 'HH:mm')}. Revisa el repertorio y confirma tu asistencia.`
+      : `🔔 Recuerda: tienes ensayo el ${format(new Date(toRemind.starts_at), "EEEE d 'de' MMMM", { locale: es })} a ${format(new Date(toRemind.starts_at), 'HH:mm')}. Revisa el repertorio y confirma tu asistencia.`
+    : '';
 
   return (
     <PageHeader
@@ -283,6 +292,17 @@ export function CalendarPage() {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
+                    {e.event_type === 'rehearsal' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Enviar recordatorio de ensayo"
+                        disabled={sendingReminderId === e.id}
+                        onClick={() => setToRemind(e)}
+                      >
+                        <Bell className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" aria-label="Eliminar" onClick={() => setToDelete(e)}>
                       <Trash2 className="h-4 w-4 text-red-400" />
                     </Button>
@@ -303,6 +323,30 @@ export function CalendarPage() {
       />
 
       <EventDetail event={selected} onOpenChange={(v) => !v && closeDetail()} onChanged={events.reload} />
+
+      <ConfirmDialog
+        open={!!toRemind}
+        onOpenChange={(v) => !v && setToRemind(null)}
+        title="Enviar recordatorio de ensayo"
+        description={reminderMessage}
+        confirmLabel="Enviar recordatorio"
+        onConfirm={async () => {
+          if (!toRemind || sendingReminderId) return;
+          setSendingReminderId(toRemind.id);
+          try {
+            await sendPushNotification({
+              title: '🔔 Recordatorio de ensayo',
+              message: reminderMessage,
+              url: `/calendario?event=${toRemind.id}`,
+            });
+            toast.success('Recordatorio enviado');
+          } catch {
+            toast.error('No se pudo enviar el recordatorio');
+          } finally {
+            setSendingReminderId(null);
+          }
+        }}
+      />
 
       <ConfirmDialog
         open={!!toDelete}
