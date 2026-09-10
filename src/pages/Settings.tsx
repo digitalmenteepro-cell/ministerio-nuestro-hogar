@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,7 +13,6 @@ import { useAsync } from '@/hooks/useAsync';
 import { useToast } from '@/hooks/useToast';
 import { getSettings, updateSettings } from '@/services/settings.service';
 import { errorMessage } from '@/lib/utils';
-import { initializeOneSignal, OneSignal } from '@/lib/onesignal';
 
 const schema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
@@ -32,69 +31,6 @@ type FormValues = z.infer<typeof schema>;
 export function Settings() {
   const toast = useToast();
   const settings = useAsync(() => getSettings(), []);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [notificationsLoading, setNotificationsLoading] = useState(false);
-  const [notificationsError, setNotificationsError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const pushSubscription = OneSignal.User.PushSubscription;
-    const refreshNotificationState = () => {
-      if (cancelled) return;
-      setNotificationsEnabled(
-        OneSignal.Notifications.permission === true && pushSubscription.optedIn === true,
-      );
-    };
-
-    void initializeOneSignal()
-      .then(() => {
-        if (cancelled) return;
-        pushSubscription.addEventListener('change', refreshNotificationState);
-        refreshNotificationState();
-      })
-      .catch(() => {
-        if (!cancelled) setNotificationsError('No se pudieron cargar las notificaciones.');
-      });
-
-    return () => {
-      cancelled = true;
-      pushSubscription.removeEventListener('change', refreshNotificationState);
-    };
-  }, []);
-
-  const activateNotifications = async () => {
-    setNotificationsLoading(true);
-    setNotificationsError(null);
-
-    try {
-      await Promise.race([
-        initializeOneSignal().then(async () => {
-          if (OneSignal.Notifications.permission === false) {
-            await OneSignal.Notifications.requestPermission();
-          }
-          if (
-            OneSignal.Notifications.permission === true &&
-            OneSignal.User.PushSubscription.optedIn === false
-          ) {
-            await OneSignal.User.PushSubscription.optIn();
-          }
-          setNotificationsEnabled(
-            OneSignal.Notifications.permission === true &&
-              OneSignal.User.PushSubscription.optedIn === true,
-          );
-        }),
-        new Promise<never>((_, reject) => {
-          window.setTimeout(() => reject(new Error('timeout')), 8000);
-        }),
-      ]);
-    } catch {
-      setNotificationsEnabled(false);
-      setNotificationsError('No se pudieron activar las notificaciones. Inténtalo nuevamente.');
-    } finally {
-      setNotificationsLoading(false);
-    }
-  };
-
   const {
     register, handleSubmit, reset,
     formState: { errors, isSubmitting, isDirty },
@@ -208,26 +144,6 @@ export function Settings() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Notificaciones</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              Recibe avisos de ensayos, anuncios, nuevas canciones y cambios importantes.
-            </p>
-            <div className="flex flex-col items-start gap-2 sm:items-end">
-              {notificationsEnabled ? (
-                <span className="text-sm font-medium text-primary">Notificaciones activadas</span>
-              ) : (
-                <Button type="button" onClick={activateNotifications} loading={notificationsLoading}>
-                  Activar notificaciones
-                </Button>
-              )}
-              {notificationsError && <p className="text-xs text-red-400">{notificationsError}</p>}
-            </div>
-          </CardContent>
-        </Card>
 
         <div>
           <Button type="submit" loading={isSubmitting} disabled={!isDirty}>
