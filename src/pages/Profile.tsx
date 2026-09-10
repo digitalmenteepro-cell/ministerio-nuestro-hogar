@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import { KeyRound, Upload } from 'lucide-react';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorState } from '@/components/ErrorState';
 import { Button } from '@/components/ui/button';
@@ -188,6 +189,8 @@ export function Profile() {
               <p className="text-center text-xs text-muted-foreground">JPG, PNG o WEBP. Máximo 5 MB.</p>
             </CardContent>
           </Card>
+
+          <NotificationSettings />
 
           <Card>
             <CardHeader>
