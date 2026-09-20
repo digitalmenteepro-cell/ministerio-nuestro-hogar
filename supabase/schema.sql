@@ -91,6 +91,7 @@ create table if not exists public.events (
   id               uuid primary key default gen_random_uuid(),
   title            text not null,
   event_type       public.event_type not null,
+  status           text not null default 'active',
   starts_at        timestamptz not null,
   ends_at          timestamptz,
   location         text,
@@ -104,6 +105,7 @@ create table if not exists public.events (
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
   constraint events_title_not_blank check (length(btrim(title)) > 0),
+  constraint events_status_check check (status in ('active', 'suspended')),
   constraint events_end_after_start check (ends_at is null or ends_at > starts_at)
 );
 

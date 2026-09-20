@@ -84,6 +84,12 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
     <Dialog open={!!event} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
+          {event.status === 'suspended' && (
+            <div className="mb-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+              <p className="font-bold tracking-wide">⚠️ ACTIVIDAD SUSPENDIDA</p>
+              <p className="mt-1 text-amber-100/80">Esta actividad fue suspendida.</p>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Badge variant={event.event_type === 'special' ? 'warning' : 'default'}>
               {EVENT_TYPE_LABEL[event.event_type]}

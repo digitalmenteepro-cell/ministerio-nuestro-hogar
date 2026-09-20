@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -14,7 +16,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { listProfiles } from '@/services/profiles.service';
-import { createEvent, updateEvent, type EventInput } from '@/services/events.service';
+import { createEvent, updateEvent, updateEventStatus, type EventInput } from '@/services/events.service';
 import { errorMessage, fullName } from '@/lib/utils';
 import { sendPushNotification } from '@/lib/notifications';
 import type { EventType, MinistryEvent } from '@/types';
@@ -51,9 +53,10 @@ interface Props {
 }
 
 export function EventDialog({ open, onOpenChange, event, defaultDate, onSaved }: Props) {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const toast = useToast();
   const members = useAsync(() => listProfiles(false), []);
+  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
 
   const {
     register, handleSubmit, reset, watch, setValue,
@@ -104,6 +107,7 @@ export function EventDialog({ open, onOpenChange, event, defaultDate, onSaved }:
     const payload: EventInput = {
       title: values.title.trim(),
       event_type: values.event_type,
+      status: event?.status ?? 'active',
       starts_at: new Date(values.starts_at).toISOString(),
       ends_at: values.ends_at ? new Date(values.ends_at).toISOString() : null,
       location: clean(values.location),
@@ -145,6 +149,32 @@ export function EventDialog({ open, onOpenChange, event, defaultDate, onSaved }:
       onSaved();
     } catch (err) {
       toast.error('No se pudo guardar el evento', errorMessage(err));
+    }
+  };
+
+  const updateStatus = async () => {
+    if (!event || !isAdmin) return;
+    try {
+      const nextStatus = event.status === 'suspended' ? 'active' : 'suspended';
+      await updateEventStatus(event.id, nextStatus);
+      if (nextStatus === 'suspended') {
+        const label = event.event_type === 'rehearsal' ? 'ensayo' : event.event_type === 'service' ? 'culto' : 'actividad';
+        const title = event.event_type === 'rehearsal' ? '⚠️ Ensayo suspendido' : event.event_type === 'service' ? '⚠️ Culto suspendido' : '⚠️ Actividad suspendida';
+        const startsAt = new Date(event.starts_at);
+        const time = format(startsAt, 'HH:mm');
+        const date = format(startsAt, "EEEE d 'de' MMMM", { locale: es });
+        const message = `${label.charAt(0).toUpperCase()}${label.slice(1)} ${format(startsAt, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'de hoy' : `del ${date}`} a las ${time} ha sido suspendido. Revisa la aplicación para más información.`;
+        await sendPushNotification({ title, message, url: `/calendario?event=${event.id}` });
+        toast.success('Actividad suspendida');
+      } else {
+        toast.success('Actividad reactivada');
+      }
+      setStatusConfirmOpen(false);
+      onOpenChange(false);
+      onSaved();
+    } catch (err) {
+      toast.error('No se pudo actualizar la actividad', errorMessage(err));
+      throw err;
     }
   };
 
@@ -242,6 +272,20 @@ export function EventDialog({ open, onOpenChange, event, defaultDate, onSaved }:
             <Textarea id="e_obs" rows={2} {...register('observations')} />
           </div>
 
+          {event && isAdmin && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="border-amber-500/50 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
+                onClick={() => setStatusConfirmOpen(true)}
+                disabled={isSubmitting}
+              >
+                {event.status === 'suspended' ? 'Reactivar actividad' : '⚠️ Suspender actividad'}
+              </Button>
+            </div>
+          )}
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
@@ -252,6 +296,16 @@ export function EventDialog({ open, onOpenChange, event, defaultDate, onSaved }:
           </DialogFooter>
         </form>
       </DialogContent>
+      {event && isAdmin && (
+        <ConfirmDialog
+          open={statusConfirmOpen}
+          onOpenChange={setStatusConfirmOpen}
+          title={event.status === 'suspended' ? '¿Reactivar esta actividad?' : '¿Suspender esta actividad?'}
+          description={event.status === 'suspended' ? 'Esta actividad volverá a marcarse como activa.' : 'Esta actividad quedará marcada como suspendida y se enviará una notificación a todos los integrantes.'}
+          confirmLabel={event.status === 'suspended' ? 'Sí, reactivar' : 'Sí, suspender'}
+          onConfirm={updateStatus}
+        />
+      )}
     </Dialog>
   );
 }

@@ -1,5 +1,6 @@
 export type Role = 'admin' | 'musician';
 export type EventType = 'rehearsal' | 'service' | 'special';
+export type EventStatus = 'active' | 'suspended';
 export type AttendanceStatus = 'attending' | 'not_attending' | 'late' | 'unable';
 export type FileCategory = 'pdf' | 'word' | 'image' | 'audio' | 'score' | 'other';
 export type NotificationChannel = 'push' | 'email' | 'whatsapp';
@@ -53,6 +54,7 @@ export interface MinistryEvent {
   id: string;
   title: string;
   event_type: EventType;
+  status: EventStatus;
   starts_at: string;
   ends_at: string | null;
   location: string | null;

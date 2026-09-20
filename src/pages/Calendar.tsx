@@ -193,9 +193,10 @@ export function CalendarPage() {
                           className={cn(
                             'block truncate rounded px-1.5 py-0.5 text-[10px] text-white',
                             TYPE_COLOR[e.event_type],
+                            e.status === 'suspended' && 'bg-zinc-700/80 text-amber-200 line-through decoration-amber-300/70',
                           )}
                         >
-                          {format(new Date(e.starts_at), 'HH:mm')} {e.title}
+                          {e.status === 'suspended' ? 'SUSPENDIDO · ' : ''}{format(new Date(e.starts_at), 'HH:mm')} {e.title}
                         </span>
                       ))}
                       {dayEvents.length > 2 && (
@@ -232,9 +233,10 @@ export function CalendarPage() {
                         className={cn(
                           'block w-full truncate rounded px-2 py-1.5 text-left text-[11px] text-white',
                           TYPE_COLOR[e.event_type],
+                          e.status === 'suspended' && 'bg-zinc-700/80 text-amber-200 line-through decoration-amber-300/70',
                         )}
                       >
-                        {format(new Date(e.starts_at), 'HH:mm')} · {e.title}
+                        {e.status === 'suspended' ? 'SUSPENDIDO · ' : ''}{format(new Date(e.starts_at), 'HH:mm')} · {e.title}
                       </button>
                     ))}
                   </div>
@@ -265,7 +267,7 @@ export function CalendarPage() {
 
           {eventsOn(cursor).map((e) => (
             <Card key={e.id}>
-              <CardContent className="flex items-center gap-4 p-4">
+              <CardContent className={cn('flex items-center gap-4 p-4', e.status === 'suspended' && 'border border-amber-500/30 bg-amber-500/5')}>
                 <div className="shrink-0 text-center">
                   <p className="text-lg font-bold">{format(new Date(e.starts_at), 'HH:mm')}</p>
                   {e.ends_at && (
@@ -275,6 +277,7 @@ export function CalendarPage() {
                 <button type="button" onClick={() => openDetail(e)} className="min-w-0 flex-1 text-left">
                   <p className="truncate font-medium">{e.title}</p>
                   <p className="truncate text-xs text-muted-foreground">{e.location || 'Sin lugar definido'}</p>
+                  {e.status === 'suspended' && <span className="mt-1 inline-block text-[10px] font-bold tracking-wider text-amber-300">SUSPENDIDO</span>}
                 </button>
                 <Badge variant={e.event_type === 'special' ? 'warning' : 'default'}>
                   {EVENT_TYPE_LABEL[e.event_type]}

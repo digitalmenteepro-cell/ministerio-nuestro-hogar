@@ -58,6 +58,13 @@ export async function updateEvent(id: string, patch: Partial<EventInput>): Promi
   return data as MinistryEvent;
 }
 
+export async function updateEventStatus(id: string, status: MinistryEvent['status']): Promise<MinistryEvent> {
+  const db = requireSupabase();
+  const { data, error } = await db.from('events').update({ status }).eq('id', id).select(SELECT).single();
+  if (error) throw new Error(error.message);
+  return data as MinistryEvent;
+}
+
 export async function deleteEvent(id: string): Promise<void> {
   const db = requireSupabase();
   const { error } = await db.from('events').delete().eq('id', id);
