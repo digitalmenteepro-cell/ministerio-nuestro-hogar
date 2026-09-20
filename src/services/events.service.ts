@@ -89,12 +89,13 @@ export async function removeSongFromEvent(eventId: string, songId: string): Prom
   if (error) throw new Error(error.message);
 }
 
-export async function reorderEventSong(eventId: string, songId: string, position: number): Promise<void> {
+export async function reorderEventSongs(eventId: string, songs: Pick<EventSong, 'song_id' | 'position'>[]): Promise<void> {
   const db = requireSupabase();
-  const { error } = await db
-    .from('event_songs')
-    .update({ position })
-    .eq('event_id', eventId)
-    .eq('song_id', songId);
-  if (error) throw new Error(error.message);
+  const results = await Promise.all(
+    songs.map(({ song_id, position }) =>
+      db.from('event_songs').update({ position }).eq('event_id', eventId).eq('song_id', song_id),
+    ),
+  );
+  const failed = results.find(({ error }) => error);
+  if (failed?.error) throw new Error(failed.error.message);
 }
