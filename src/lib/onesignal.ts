@@ -15,6 +15,10 @@ export function initializeOneSignal(): Promise<void> {
     },
     autoRegister: false,
     autoResubscribe: true,
+    welcomeNotification: {
+      title: '🔔 Notificaciones activadas',
+      message: 'Ya recibirás avisos de ensayos, anuncios y actividades del Ministerio Nuestro Hogar.',
+    },
     notifyButton: {
       enable: false,
       prenotify: false,

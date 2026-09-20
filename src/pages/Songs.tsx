@@ -142,7 +142,7 @@ export function Songs() {
         toast.success('Canción agregada');
         try {
           await sendPushNotification({
-            title: 'Nueva canción',
+            title: '🎵 Nueva canción',
             message: `Se agregó «${payload.title}» al repertorio.`,
             url: 'https://ministerio-nuestro-hogar.vercel.app/repertorio',
           });
