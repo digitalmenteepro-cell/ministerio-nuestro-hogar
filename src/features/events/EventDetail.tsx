@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Check, Clock, MapPin, Music2, Plus, User, X, Youtube } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, Clock, MapPin, Music2, Plus, Save, User, X, Youtube } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -11,11 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { addSongToEvent, listEventSongs, removeSongFromEvent } from '@/services/events.service';
+import { addSongToEvent, listEventSongs, removeSongFromEvent, reorderEventSongs } from '@/services/events.service';
 import { listSongs } from '@/services/songs.service';
 import { listEventAttendance, respondAttendance } from '@/services/attendance.service';
+import { sendPushNotification } from '@/lib/notifications';
 import { errorMessage, formatDuration, fullName } from '@/lib/utils';
-import { ATTENDANCE_LABEL, EVENT_TYPE_LABEL, type AttendanceStatus, type MinistryEvent } from '@/types';
+import { ATTENDANCE_LABEL, EVENT_TYPE_LABEL, type AttendanceStatus, type EventSong, type MinistryEvent } from '@/types';
 
 const STATUS_STYLE: Record<AttendanceStatus, 'success' | 'destructive' | 'warning' | 'secondary'> = {
   attending: 'success',
@@ -39,6 +40,14 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
   const attendance = useAsync(() => (eventId ? listEventAttendance(eventId) : Promise.resolve([])), [eventId]);
   const songs = useAsync(() => listSongs(), []);
   const [adding, setAdding] = useState('');
+  const [orderedSetlist, setOrderedSetlist] = useState<EventSong[]>([]);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [orderDirty, setOrderDirty] = useState(false);
+
+  useEffect(() => {
+    setOrderedSetlist(setlist.data ?? []);
+    setOrderDirty(false);
+  }, [setlist.data]);
 
   if (!event) return null;
 
@@ -76,8 +85,42 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
     }
   };
 
+  const moveSong = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= orderedSetlist.length) return;
+    setOrderedSetlist((current) => {
+      const next = [...current];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+    setOrderDirty(true);
+  };
+
+  const saveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      const positionedSongs = orderedSetlist.map((item, index) => ({
+        song_id: item.song_id,
+        position: index + 1,
+      }));
+      await reorderEventSongs(event.id, positionedSongs);
+      await sendPushNotification({
+        title: 'Repertorio actualizado',
+        message: `Se actualizó el repertorio de ${event.title}.`,
+        url: `/calendario?event=${event.id}`,
+      });
+      toast.success('Orden guardado', 'Se notificó a los integrantes.');
+      setOrderDirty(false);
+      setlist.reload();
+    } catch (err) {
+      toast.error('No se pudo guardar el orden', errorMessage(err));
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
   const available = (songs.data ?? []).filter(
-    (s) => !(setlist.data ?? []).some((item) => item.song_id === s.id),
+    (s) => !orderedSetlist.some((item) => item.song_id === s.id),
   );
 
   return (
@@ -157,9 +200,33 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
               </p>
             )}
 
-            {(setlist.data ?? []).map((item, index) => (
+            {orderedSetlist.map((item, index) => (
               <div key={item.song_id} className="flex items-center gap-3 rounded-lg border border-border p-3">
                 <span className="w-5 shrink-0 text-center text-xs text-muted-foreground">{index + 1}</span>
+                {isAdmin && (
+                  <div className="flex shrink-0 flex-col">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      aria-label={`Subir ${item.song?.title ?? 'canción'}`}
+                      disabled={index === 0}
+                      onClick={() => moveSong(index, -1)}
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      aria-label={`Bajar ${item.song?.title ?? 'canción'}`}
+                      disabled={index === orderedSetlist.length - 1}
+                      onClick={() => moveSong(index, 1)}
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
                 <Music2 className="h-4 w-4 shrink-0 text-brand-300" aria-hidden />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{item.song?.title}</p>
@@ -206,6 +273,17 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
                 )}
               </div>
             ))}
+
+            {isAdmin && orderedSetlist.length > 0 && (
+              <Button
+                className="w-full"
+                onClick={() => void saveOrder()}
+                disabled={!orderDirty || savingOrder}
+              >
+                <Save className="h-4 w-4" />
+                {savingOrder ? 'Guardando…' : 'Guardar orden'}
+              </Button>
+            )}
 
             {isAdmin && (
               <div className="flex gap-2 pt-2">
