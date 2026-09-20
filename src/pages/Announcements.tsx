@@ -102,8 +102,8 @@ export function Announcements() {
         if (published && !editing.published) {
           try {
             await sendPushNotification({
-              title: 'Nuevo anuncio',
-              message: title.trim() || 'Se ha publicado un nuevo anuncio en Nuestro Hogar.',
+              title: '📢 Nuevo anuncio',
+              message: `${title.trim()}\n\n${body.trim()}`,
               url: `https://ministerio-nuestro-hogar.vercel.app/anuncios?announcement=${editing.id}`,
             });
           } catch {
@@ -119,8 +119,8 @@ export function Announcements() {
         if (published) {
           try {
             await sendPushNotification({
-              title: 'Nuevo anuncio',
-              message: title.trim() || 'Se ha publicado un nuevo anuncio en Nuestro Hogar.',
+              title: '📢 Nuevo anuncio',
+              message: `${title.trim()}\n\n${body.trim()}`,
               url: `https://ministerio-nuestro-hogar.vercel.app/anuncios?announcement=${createdAnnouncement.id}`,
             });
           } catch {
