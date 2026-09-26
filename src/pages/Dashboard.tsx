@@ -46,10 +46,29 @@ export function Dashboard() {
     : [];
 
   return (
-    <PageHeader
-      title={`Hola, ${profile?.first_name || 'bienvenido'}`}
-      description="Este es el resumen del ministerio."
-    >
+    <PageHeader title="" description="">
+      <section
+        aria-labelledby="dashboard-hero-title"
+        className="relative isolate mb-6 min-h-[190px] overflow-hidden rounded-2xl border border-brand/30 bg-zinc-950 shadow-xl shadow-brand/10 sm:min-h-[230px]"
+      >
+        <img
+          src="/dashboard-hero.png"
+          alt="Culto de alabanza en el Ministerio Nuestro Hogar"
+          className="absolute inset-0 -z-20 size-full object-cover object-center"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-zinc-950 via-zinc-950/85 to-brand/40" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-zinc-950/70 via-transparent to-transparent" />
+        <div className="flex min-h-[190px] max-w-xl flex-col justify-center p-6 sm:min-h-[230px] sm:p-9">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-200">Ministerio Nuestro Hogar</p>
+          <h1 id="dashboard-hero-title" className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            Hola, {profile?.first_name || 'bienvenido'}
+          </h1>
+          <p className="mt-3 max-w-md text-sm leading-6 text-zinc-200 sm:text-base">
+            Este es el resumen del Ministerio Nuestro Hogar.
+          </p>
+        </div>
+      </section>
+
       {stats.loading && <SkeletonCards />}
       {stats.error && <ErrorState message={stats.error} onRetry={stats.reload} />}
       {stats.data && (
