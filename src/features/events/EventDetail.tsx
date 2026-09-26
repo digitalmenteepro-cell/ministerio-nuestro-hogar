@@ -125,32 +125,32 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
 
   return (
     <Dialog open={!!event} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
+      <DialogContent className="max-w-2xl w-[calc(100%-env(safe-area-inset-left)-env(safe-area-inset-right)-1rem)] max-w-[calc(100vw-env(safe-area-inset-left)-env(safe-area-inset-right)-1rem)] overflow-x-hidden p-4 pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] [&>button:last-child]:right-[calc(1rem+env(safe-area-inset-right))] [&>button:last-child]:top-[calc(1rem+env(safe-area-inset-top))] sm:w-[calc(100%-2rem)] sm:max-w-2xl sm:p-6 sm:pt-6 sm:pb-6">
+        <DialogHeader className="min-w-0">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <Badge variant={event.event_type === 'special' ? 'warning' : 'default'}>
               {EVENT_TYPE_LABEL[event.event_type]}
             </Badge>
           </div>
-          <DialogTitle>{event.title}</DialogTitle>
+          <DialogTitle className="min-w-0 break-words pr-8">{event.title}</DialogTitle>
           <DialogDescription>
             {format(new Date(event.starts_at), "EEEE d 'de' MMMM yyyy, HH:mm", { locale: es })}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+        <div className="flex min-w-0 flex-wrap gap-3 text-sm text-muted-foreground">
           {event.location && (
-            <span className="flex items-center gap-1.5">
+            <span className="flex min-w-0 max-w-full items-start gap-1.5 break-words">
               <MapPin className="h-4 w-4" /> {event.location}
             </span>
           )}
           {event.ends_at && (
-            <span className="flex items-center gap-1.5">
+            <span className="flex min-w-0 max-w-full items-start gap-1.5 break-words">
               <Clock className="h-4 w-4" /> Hasta {format(new Date(event.ends_at), 'HH:mm')}
             </span>
           )}
           {event.responsible && (
-            <span className="flex items-center gap-1.5">
+            <span className="flex min-w-0 max-w-full items-start gap-1.5 break-words">
               <User className="h-4 w-4" /> {fullName(event.responsible)}
             </span>
           )}
@@ -180,8 +180,8 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
           </div>
         </div>
 
-        <Tabs defaultValue="setlist">
-          <TabsList className="w-full">
+        <Tabs defaultValue="setlist" className="min-w-0 overflow-hidden">
+          <TabsList className="w-full min-w-0">
             <TabsTrigger value="setlist" className="flex-1">
               Repertorio ({setlist.data?.length ?? 0})
             </TabsTrigger>
@@ -192,7 +192,7 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
             )}
           </TabsList>
 
-          <TabsContent value="setlist" className="space-y-2">
+          <TabsContent value="setlist" className="min-w-0 space-y-2">
             {setlist.loading && <Skeleton className="h-20 w-full" />}
             {setlist.data?.length === 0 && (
               <p className="py-4 text-center text-sm text-muted-foreground">
@@ -201,7 +201,7 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
             )}
 
             {orderedSetlist.map((item, index) => (
-              <div key={item.song_id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+              <div key={item.song_id} className="flex min-w-0 items-start gap-2 rounded-lg border border-border p-2.5 sm:gap-3 sm:p-3">
                 <span className="w-5 shrink-0 text-center text-xs text-muted-foreground">{index + 1}</span>
                 {isAdmin && (
                   <div className="flex shrink-0 flex-col">
@@ -229,8 +229,8 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
                 )}
                 <Music2 className="h-4 w-4 shrink-0 text-brand-300" aria-hidden />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.song?.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="break-words text-sm font-medium">{item.song?.title}</p>
+                  <p className="break-words text-xs text-muted-foreground">
                     {item.song?.author || 'Autor desconocido'}
                     {item.song?.song_key ? ` · Tono ${item.song.song_key}` : ''}
                     {item.song?.duration_seconds != null ? ` · ${formatDuration(item.song.duration_seconds)}` : ''}
@@ -286,9 +286,9 @@ export function EventDetail({ event, onOpenChange, onChanged }: Props) {
             )}
 
             {isAdmin && (
-              <div className="flex gap-2 pt-2">
+              <div className="flex min-w-0 flex-wrap gap-2 pt-2">
                 <Select value={adding} onValueChange={setAdding}>
-                  <SelectTrigger>
+                  <SelectTrigger className="min-w-0 flex-1">
                     <SelectValue placeholder="Agregar canción al evento…" />
                   </SelectTrigger>
                   <SelectContent>
