@@ -22,7 +22,7 @@ import { uploadAvatar } from '@/services/storage.service';
 import { errorMessage, initials } from '@/lib/utils';
 
 const schema = z.object({
-  first_name: z.string().min(1, 'Ingresa tu nombre.'),
+  first_name: z.string().trim().min(2, 'Ingresa un nombre de al menos 2 caracteres.'),
   last_name: z.string().min(1, 'Ingresa tu apellido.'),
   phone: z.string().optional(),
   instrument_id: z.string().optional(),
@@ -64,15 +64,12 @@ export function Profile() {
   const onSubmit = async (values: FormValues) => {
     try {
       await updateProfile(profile.id, {
-        first_name: values.first_name,
-        last_name: values.last_name,
-        phone: values.phone?.trim() || null,
-        instrument_id: values.instrument_id === NONE ? null : (values.instrument_id ?? null),
+        first_name: values.first_name.trim(),
       });
       await refreshProfile();
-      toast.success('Perfil actualizado');
-    } catch (err) {
-      toast.error('No se pudo guardar', errorMessage(err));
+      toast.success('Nombre actualizado correctamente');
+    } catch {
+      toast.error('No se pudo actualizar tu nombre');
     }
   };
 
@@ -95,7 +92,7 @@ export function Profile() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Datos personales</CardTitle>
+            <CardTitle className="text-base">Información personal</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -107,7 +104,7 @@ export function Profile() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="last_name">Apellido</Label>
-                  <Input id="last_name" {...register('last_name')} />
+                  <Input id="last_name" {...register('last_name')} disabled />
                   {errors.last_name && <p className="text-xs text-red-400">{errors.last_name.message}</p>}
                 </div>
               </div>
@@ -121,11 +118,12 @@ export function Profile() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="phone">Teléfono</Label>
-                  <Input id="phone" type="tel" placeholder="+56 9 1234 5678" {...register('phone')} />
+                  <Input id="phone" type="tel" placeholder="+56 9 1234 5678" {...register('phone')} disabled />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Instrumento</Label>
                   <Select
+                    disabled
                     value={watch('instrument_id') ?? NONE}
                     onValueChange={(v) => setValue('instrument_id', v, { shouldDirty: true })}
                   >
