@@ -20,10 +20,10 @@ export default {
         accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
         card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
         brand: {
-          DEFAULT: '#590776',
-          50: '#f6f0fa', 100: '#ead9f3', 200: '#d5b3e7', 300: '#bd8ad9',
-          400: '#9b52c4', 500: '#7a1fa8', 600: '#590776', 700: '#4a0663',
-          800: '#3a0a4d', 900: '#2a0838',
+          DEFAULT: '#38BDF8',
+          50: '#F0F9FF', 100: '#E0F2FE', 200: '#BAE6FD', 300: '#7DD3FC',
+          400: '#38BDF8', 500: '#0EA5E9', 600: '#0284C7', 700: '#0369A1',
+          800: '#075985', 900: '#0C4A6E',
         },
       },
       borderRadius: {

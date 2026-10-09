@@ -55,7 +55,7 @@ export default defineConfig({
         short_name: 'Nuestro Hogar',
         description: 'Gestión de ensayos, cultos, repertorio y asistencia del Ministerio de Alabanza Nuestro Hogar.',
         lang: 'es',
-        theme_color: '#590776',
+        theme_color: '#38BDF8',
         background_color: '#09090b',
         display: 'standalone',
         orientation: 'portrait',
