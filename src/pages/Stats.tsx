@@ -10,7 +10,7 @@ import { Skeleton, SkeletonCards } from '@/components/ui/skeleton';
 import { useAsync } from '@/hooks/useAsync';
 import { attendanceByUser, dashboardStats } from '@/services/attendance.service';
 
-const COLORS = ['#590776', '#9b52c4', '#d5b3e7'];
+const COLORS = ['#38BDF8', '#0EA5E9', '#7DD3FC'];
 
 const TOOLTIP_STYLE = {
   backgroundColor: '#18181b',
@@ -118,7 +118,7 @@ export function Stats() {
                         <XAxis dataKey="name" stroke="#a1a1aa" fontSize={12} />
                         <YAxis stroke="#a1a1aa" fontSize={12} domain={[0, 100]} />
                         <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#27272a' }} />
-                        <Bar dataKey="rate" fill="#590776" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="rate" fill="#38BDF8" radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}

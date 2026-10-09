@@ -17,7 +17,7 @@ import { errorMessage } from '@/lib/utils';
 const schema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
   logo_url: z.string().optional(),
-  primary_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Usa un color hexadecimal (#590776).'),
+  primary_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Usa un color hexadecimal (#38BDF8).'),
   address: z.string().optional(),
   phones: z.string().optional(),
   schedule: z.string().optional(),
@@ -42,7 +42,7 @@ export function Settings() {
     reset({
       name: s.name,
       logo_url: s.logo_url ?? '',
-      primary_color: s.primary_color || '#590776',
+      primary_color: s.primary_color || '#38BDF8',
       address: s.address ?? '',
       phones: (s.phones ?? []).join(', '),
       schedule: s.schedule ?? '',
@@ -97,7 +97,7 @@ export function Settings() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="s_color">Color principal</Label>
-                <Input id="s_color" type="text" placeholder="#590776" {...register('primary_color')} />
+                <Input id="s_color" type="text" placeholder="#38BDF8" {...register('primary_color')} />
                 {errors.primary_color && <p className="text-xs text-red-400">{errors.primary_color.message}</p>}
               </div>
             </div>
